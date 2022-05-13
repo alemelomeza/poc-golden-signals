@@ -52,7 +52,7 @@ func StartApp() {
 	e.Use(middleware.Recover())
 
 	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "start...")
+		return c.String(http.StatusOK, "/")
 	})
 	e.GET("/counter", func(c echo.Context) error {
 		counter.Inc()
@@ -60,11 +60,13 @@ func StartApp() {
 	})
 	e.GET("/histogram", func(c echo.Context) error {
 		start := time.Now()
+		defer func() {
+			httpDuration := time.Since(start)
+			histogram.WithLabelValues(fmt.Sprintf("%d", http.StatusOK)).Observe(httpDuration.Seconds())
+		}()
 		rand.Seed(time.Now().UnixNano())
-		n := rand.Intn(12)
+		n := rand.Intn(2)
 		time.Sleep(time.Duration(n) * time.Second)
-		httpDuration := time.Since(start)
-		histogram.WithLabelValues(fmt.Sprintf("%d", http.StatusOK)).Observe(httpDuration.Seconds())
 		return c.String(http.StatusOK, "histogram")
 	})
 	e.GET("/metrics", func(c echo.Context) error {
